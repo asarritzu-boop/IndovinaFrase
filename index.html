@@ -477,12 +477,12 @@
             let ut = prompt("TITOLO SFIDA:", titoloAttuale || "");
             const b64 = btoa(unescape(encodeURIComponent(f)));
             const t64 = "&t=" + btoa(unescape(encodeURIComponent(ut || "SFIDA")));
-            const link = "https://puzzlengames.github.io/Indovina-la-Frase/?s=" + b64 + t64; 
+            const link = "https://asarritzu-boop.github.io/IndovinaFrase/?s=" + b64 + t64; 
             navigator.clipboard.writeText(link); alert("Link sfida copiato!");
         }
 
         function condividiApp() {
-            const url = "https://puzzlengames.github.io/Indovina-la-Frase/";
+            const url = "https://asarritzu-boop.github.io/IndovinaFrase/";
             if (navigator.share) navigator.share({ title: 'Cyber Puzzle Pro', url: url });
             else { navigator.clipboard.writeText(url); alert("Link copiato!"); }
         }
@@ -520,3 +520,4 @@
 </body>
 
 </html>
+

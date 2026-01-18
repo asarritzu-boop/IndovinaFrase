@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Puzzle Pro - Party Edition</title>
+
+    <meta name="theme-color" content="#003399">
+    <meta property="og:title" content="Cyber Puzzle Pro">
+    <meta property="og:description" content="Indovina la frase e sfida i tuoi amici!">
+    <meta property="og:image" content="https://puzzlengames.github.io/Indovina-la-Frase/icona.png">
+    <meta property="og:url" content="https://puzzlengames.github.io/Indovina-la-Frase/">
+    <meta property="og:type" content="website">
+
+    <script src="database.js"></script>
+
+    <link rel="icon" type="image/png" href="icona.png">
+    <link rel="apple-touch-icon" href="icona.png">
+    
+    <style>
+        :root { 
+            --box-dim: 45px; --font-dim: 28px; 
+            --bg-grad-1: #003399; --bg-grad-2: #00050a;
+            --neon-1: #0ff; --neon-2: #f0f; --key-bg: #002266;
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%; 
+            background: var(--bg-grad-2); background-image: radial-gradient(circle, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+            color: var(--neon-1); font-family: sans-serif; transition: background 0.5s ease; overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #START { display: block; height: 100%; overflow-y: auto; text-align: center; padding: 20px 0; box-sizing: border-box; }
+        #GAME { display: none; flex-direction: column; height: 100vh; height: 100svh; width: 100vw; overflow: hidden; }
+
+        #UI_TOP { flex-shrink: 0; padding: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; background: rgba(0,0,0,0.4); }
+        #UI_TOP button { padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; font-size: 14px; }
+        #ERROR_COUNT { color: #ff4444; font-weight: bold; font-size: 13px; text-shadow: 0 0 5px #f00; }
+
+        #WHEEL_CONTAINER { background: rgba(0,0,0,0.6); padding: 10px; border-bottom: 1px solid var(--neon-1); text-align: center; flex-shrink: 0; }
+        #WHEEL_DISPLAY { font-size: 24px; font-weight: bold; color: var(--neon-2); text-shadow: 0 0 10px var(--neon-2); margin-bottom: 5px; height: 30px; }
+
+        @media (orientation: landscape) {
+            #WHEEL_CONTAINER { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 30px; padding: 5px 15px; }
+            #WHEEL_DISPLAY { margin-bottom: 0; }
+        }
+
+        #CONTENITORE_BOARD { flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; }
+        #BOARD { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; width: 100%; }
+
+        .word-group { display: flex; margin: 5px 10px; }
+        .C { width: var(--box-dim); height: calc(var(--box-dim) * 1.3); line-height: calc(var(--box-dim) * 1.3); font-size: var(--font-dim); background: white; border: 2px solid var(--neon-1); margin: 2px; display: inline-block; font-weight: 900; color: transparent; border-radius: 4px; text-align: center; }
+
+        .special-char { color: white; font-size: calc(var(--font-dim) * 1.5); font-weight: bold; margin: 0 2px; text-shadow: 0 0 10px var(--neon-1); align-self: center; }
+
+        #TITOLO_FRASE { text-align: center; color: var(--neon-2); font-weight: bold; font-size: 16px; margin-bottom: 5px; text-transform: uppercase; }
+
+        #PLAYER_AREA { background: rgba(0,0,0,0.5); padding: 5px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--neon-1); }
+        .player-tag { padding: 4px 10px; border-radius: 4px; border: 1px solid transparent; font-size: 14px; color: #fff; }
+        .active-player { border-color: var(--neon-1); background: var(--bg-grad-1); box-shadow: 0 0 10px var(--neon-1); color: var(--neon-1); font-weight: bold; }
+
+        #KEYS { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.8); padding: 10px 5px; border-top: 2px solid var(--neon-2); gap: 4px; }
+        #KEYS button { width: calc(100% / 10 - 6px); min-width: 30px; max-width: 50px; height: 42px; background: var(--key-bg); color: var(--neon-1); border: 1px solid var(--neon-1); border-radius: 5px; font-size: 16px; }
+
+        .btn-home { padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; border: none; font-size: 18px; margin-bottom: 10px; }
+        #CATEGORIES { display: none; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 10px; max-height: 250px; overflow-y: auto; }
+        .cat-item { padding: 10px 20px; background: rgba(0, 255, 255, 0.1); border: 1px solid var(--neon-1); color: var(--neon-1); border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90%; max-width: 500px; margin: 30px auto 0 auto; }
+        .btn-small { display: flex; align-items: center; justify-content: center; padding: 12px 5px; background: transparent; color: var(--neon-1); border: 1px solid var(--neon-1); border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 12px; text-transform: uppercase; cursor: pointer; text-align: center; min-height: 50px; box-sizing: border-box; }
+
+        #MODAL_INSTR { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); overflow-y: auto; }
+        .modal-content { background: var(--bg-grad-2); border: 2px solid var(--neon-1); margin: 10% auto; padding: 20px; width: 85%; max-width: 600px; border-radius: 15px; color: #fff; text-align: left; line-height: 1.6; }
+        .modal-content h2 { color: var(--neon-2); text-align: center; }
+        .close-modal { float: right; font-size: 28px; font-weight: bold; color: var(--neon-1); cursor: pointer; }
+
+        #BTN_NEXT_ROUND { display: none; background: #28a745 !important; color: white !important; }
+
+        /* NUOVI STILI */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        #GAME_NOTIFICATION {
+            position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+            background: #00ccff; color: #000; padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; z-index: 2000; display: none; box-shadow: 0 0 15px #00ccff;
+            pointer-events: none; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="GAME_NOTIFICATION"></div>
+
+    <div id="MODAL_INSTR">
+        <div class="modal-content">
+            <span class="close-modal" onclick="toggleInstr()">&times;</span>
+            <h2>📖 ISTRUZIONI</h2>
+            <p><strong>Obiettivo:</strong> Indovina la frase nascosta prima di commettere 5 errori collettivi.</p>
+            <hr style="border:0; border-top:1px solid var(--neon-1)">
+            <p><strong>🎮 Dinamiche di Gioco:</strong></p>
+            <ul>
+                <li><strong>Consonanti:</strong> Gira la ruota (SPIN) e scegli una consonante. Ricevi i punti per ogni lettera trovata.</li>
+                <li><strong>Vocali:</strong> Costano <strong>400 punti</strong>.</li>
+                <li><strong>Ruota:</strong> Attenzione a <strong>PASSO</strong> e <strong>PERDITUTTO</strong>.</li>
+            </ul>
+            <p><strong>👥 Multiplayer:</strong> Un tentativo per turno. Quando indovinate, cliccate RIVELA per incassare i punti e iniziare una nuova sfida.</p>
+            <button class="btn-home" style="background:var(--neon-1); color:#000; width:100%; margin-top:10px;" onclick="toggleInstr()">HO CAPITO</button>
+        </div>
+    </div>
+
+    <div id="START">
+        <h1 style="color:var(--neon-2); text-shadow:0 0 20px var(--neon-2); font-size:35px; margin-bottom: 10px;">CYBER PUZZLE</h1>
+        
+        <div style="background:rgba(0,0,0,0.5); padding:20px; display:inline-block; border:2px solid var(--neon-1); border-radius:20px; width:90%; max-width: 500px;">
+            <div style="margin-bottom: 20px; color:white;">
+                <label style="font-weight:bold; font-size:18px; display:block; margin-bottom:8px;">NUMERO GIOCATORI:</label>
+                <input type="number" id="PLAYER_COUNT" value="1" min="1" max="10" style="padding:12px; width:70px; font-size:20px; border:3px solid var(--neon-2); background:#000; color:#fff; text-align:center; border-radius:10px;">
+            </div>
+
+            <input type="text" id="INPUT" placeholder="INSERISCI FRASE..." style="padding:15px; width:85%; font-size:20px; border:3px solid var(--neon-1); background:#000; color:#fff; text-align:center; border-radius:10px; margin-bottom: 15px;">
+            
+            <button id="CHOOSE_BTN" class="btn-home" style="background:#444; color:white; width:90%;" onclick="toggleCategories()">OPPURE SCEGLI QUI ▾</button>
+            <div id="CATEGORIES">
+                <div class="cat-item" onclick="avviaRandom('bibbia')">BIBBIA</div>
+                <div class="cat-item" onclick="avviaRandom('creazione')">CREAZIONE</div>
+                <div class="cat-item" onclick="avviaRandom('curiosita')">CURIOSITÀ</div>
+                <div class="cat-item" onclick="avviaRandom('geografia')">GEOGRAFIA</div>
+                <div class="cat-item" onclick="avviaRandom('musica')">MUSICA</div>
+                <div class="cat-item" onclick="avviaRandom('proverbi')">PROVERBI</div>
+                <div class="cat-item" onclick="avviaRandom('scienza')">SCIENZA</div>
+                <div class="cat-item" onclick="avviaRandom('spettacolo')">SPETTACOLO</div>
+                <div class="cat-item" onclick="avviaRandom('storia')">STORIA</div>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 10px; width: 100%; margin-top: 15px;">
+                <button onclick="avviaGioco(true)" style="padding:15px; background:var(--neon-1); color:#000; font-size:22px; font-weight:bold; border:none; border-radius:10px; cursor:pointer; flex-grow: 1;">GIOCA</button>
+                <button id="SHARE_BTN" onclick="condividiSfida()" style="padding:15px; background:var(--neon-2); color:white; border:none; border-radius:10px; cursor:pointer; font-size:18px; font-weight:bold;">🔗 SFIDA</button>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <button class="btn-small" onclick="cambiaTema()">🎨 TEMA: <span id="THEME_NAME">Cyber</span></button>
+            <button class="btn-small" onclick="condividiApp()">📤 CONDIVIDI APP</button>
+            <button class="btn-small" onclick="toggleInstr()">📖 ISTRUZIONI</button>
+            <a href="CyberPuzzle.apk" download="CyberPuzzle.apk" class="btn-small">📥 SCARICA APK</a>
+        </div>
+    </div>
+
+    <div id="GAME">
+        <div id="UI_TOP">
+            <button onclick="softReset()" style="background:#444; color:white;">RESET</button>
+            <button onclick="toggleFS()" style="background:var(--neon-1); color:#000; font-size: 20px;">⛶</button>
+            <div id="ERROR_COUNT">ERRORI: 0/5</div>
+            <button id="BTN_KB" onclick="toggleKeyboard()" style="background:#0f0; color:#000; font-size: 20px;">⌨</button>
+            <button id="BTN_RIVELA" onclick="rivelaConTentativo()" style="background:var(--neon-2); color:#fff;">RIVELA</button>
+            <button id="BTN_NEXT_ROUND" onclick="nuovaManche()">NUOVA SFIDA ➡</button>
+        </div>
+
+        <div id="WHEEL_CONTAINER">
+            <div id="WHEEL_DISPLAY">GIRA LA RUOTA!</div>
+            <button id="BTN_SPIN" onclick="giraRuota()" style="padding:8px 25px; background:var(--neon-1); color:black; font-weight:bold; border-radius:5px; border:none; cursor:pointer; font-size:16px;">SPIN 🎡</button>
+        </div>
+
+        <div id="CONTENITORE_BOARD"><div id="BOARD"></div></div>
+        <div id="TITOLO_FRASE"></div>
+        <div id="PLAYER_AREA"></div>
+        <div id="KEYS"></div>
+    </div>
+
+    <script>
+        let fraseAttuale = "";
+        let titoloAttuale = "";
+        let errori = 0;
+        const MAX_ERRORI = 5;
+        const COSTO_VOCALE = 400;
+        const mapAccenti = {'À':'A','Á':'A','È':'E','É':'E','Ì':'I','Í':'I','Ò':'O','Ó':'O','Ù':'U','Ú':'U'};
+
+        let giocatori = [];
+        let indexCorrente = 0;
+        let valoreCorrente = 0;
+        let puòScegliereLettera = false;
+        const opzioniRuota = [100, 200, 400, 500, 600, 700, 800, 1000, "PASSO", "PERDITUTTO"];
+
+        const temi = [
+            { nome: "Cyber", g1: "#003399", g2: "#00050a", n1: "#0ff", n2: "#f0f", k: "#002266" },
+            { nome: "Matrix", g1: "#003300", g2: "#000000", n1: "#0f0", n2: "#0a0", k: "#001a00" },
+            { nome: "Volcano", g1: "#660000", g2: "#1a0000", n1: "#ff0", n2: "#f40", k: "#330000" },
+            { nome: "Deep Sea", g1: "#001a33", g2: "#000010", n1: "#00f", n2: "#0ff", k: "#000d1a" },
+            { nome: "Synthwave", g1: "#2b1055", g2: "#191970", n1: "#ff00ff", n2: "#00ffff", k: "#4b0082" },
+            { nome: "Gold", g1: "#443300", g2: "#110a00", n1: "#ffcc00", n2: "#ffffff", k: "#221a00" },
+            { nome: "Hacker", g1: "#000000", g2: "#000000", n1: "#00ff41", n2: "#ffffff", k: "#0d0d0d" },
+            { nome: "Barbie", g1: "#ff69b4", g2: "#ff1493", n1: "#ffffff", n2: "#ffff00", k: "#db7093" },
+            { nome: "Frozen", g1: "#3366ff", g2: "#001133", n1: "#ffffff", n2: "#00ffff", k: "#002266" },
+            { nome: "Midnight", g1: "#111111", g2: "#000000", n1: "#6666ff", n2: "#aa00ff", k: "#1a1a1a" }
+        ];
+        let temaIndex = 0;
+
+        function showNotification(text) {
+            const n = document.getElementById('GAME_NOTIFICATION');
+            n.innerText = text;
+            n.style.display = 'block';
+            setTimeout(() => { n.style.display = 'none'; }, 3000);
+        }
+
+        function checkRemainingLetters() {
+            const vocali = "AEIOU";
+            const hidden = Array.from(document.querySelectorAll('.C')).filter(c => c.style.color !== 'black');
+            let v_rimaste = 0;
+            let c_rimaste = 0;
+            hidden.forEach(c => {
+                if (vocali.includes(c.getAttribute('data-l'))) v_rimaste++;
+                else c_rimaste++;
+            });
+
+            if (v_rimaste === 0 && c_rimaste === 0) return;
+            if (v_rimaste === 0) showNotification("VOCALI TERMINATE!");
+            if (c_rimaste === 0) showNotification("CONSONANTI TERMINATE!");
+        }
+
+        function toggleInstr() {
+            const m = document.getElementById('MODAL_INSTR');
+            m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+        }
+
+        window.onload = () => {
+    const savedTema = localStorage.getItem('cyberPuzzleTheme');
+    if (savedTema !== null) { temaIndex = parseInt(savedTema); cambiaTema(false); }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const s = urlParams.get('s');
+    const t = urlParams.get('t');
+    if(s) {
+        try {
+            document.getElementById('INPUT').value = decodeURIComponent(escape(atob(s)));
+            if(t) titoloAttuale = decodeURIComponent(escape(atob(t)));
+            avviaGioco(false); 
+            
+        } catch(e) {}
+    }
+};
+
+        function softReset() {
+            document.getElementById('GAME').style.display = 'none';
+            document.getElementById('START').style.display = 'block';
+            giocatori = [];
+            indexCorrente = 0;
+            errori = 0;
+            fraseAttuale = "";
+            document.getElementById('INPUT').value = "";
+            document.getElementById('CATEGORIES').style.display = 'none';
+        }
+
+        function toggleCategories() {
+            const cat = document.getElementById('CATEGORIES');
+            cat.style.display = (cat.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function avviaRandom(categoria) {
+            if (typeof DATABASE === 'undefined') return alert("Database non trovato!");
+            const lista = DATABASE[categoria];
+            const random = lista[Math.floor(Math.random() * lista.length)];
+            titoloAttuale = random[0];
+            document.getElementById('INPUT').value = random[1];
+            avviaGioco(false); 
+        }
+
+        function avviaGioco(richiediTitolo) {
+            if (localStorage.getItem('cyberPuzzleFS') === 'true' && !document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {});
+            }
+
+            fraseAttuale = document.getElementById('INPUT').value.toUpperCase().trim();
+            if(!fraseAttuale) return;
+
+            const n = parseInt(document.getElementById('PLAYER_COUNT').value) || 1;
+            if (giocatori.length === 0) {
+                for(let i=0; i<n; i++) {
+                    let nome = n > 1 ? prompt(`NOME GIOCATORE ${i+1}:`, `PLAYER ${i+1}`) : "GIOCATORE 1";
+                    giocatori.push({ nome: (nome || `P${i+1}`).toUpperCase(), punti: 0, banca: 0 });
+                }
+            } else { giocatori.forEach(p => p.punti = 0); }
+
+            if(richiediTitolo) {
+                let ut = prompt("TITOLO O INDIZIO:");
+                titoloAttuale = ut ? ut.toUpperCase() : "FRASE";
+            }
+
+            errori = 0; indexCorrente = 0; puòScegliereLettera = false;
+            const errDiv = document.getElementById('ERROR_COUNT');
+            if (giocatori.length > 1) { errDiv.style.visibility = 'hidden'; } 
+            else { errDiv.style.visibility = 'visible'; errDiv.innerText = `ERRORI: 0/${MAX_ERRORI}`; }
+
+            document.getElementById('TITOLO_FRASE').innerText = titoloAttuale;
+            document.getElementById('START').style.display = 'none';
+            document.getElementById('GAME').style.display = 'flex';
+            document.getElementById('BTN_NEXT_ROUND').style.display = 'none';
+            document.getElementById('BTN_RIVELA').style.display = 'block';
+
+            aggiornaTabellone();
+            costruisciBoard();
+            costruisciTastiera();
+            setTimeout(ridimensionaBoard, 100);
+            document.getElementById('WHEEL_DISPLAY').innerText = `TURNO DI: ${giocatori[indexCorrente].nome}`;
+        }
+
+        function aggiornaTabellone() {
+            const area = document.getElementById('PLAYER_AREA'); area.innerHTML = '';
+            giocatori.forEach((p, i) => {
+                const tag = document.createElement('div');
+                tag.className = 'player-tag' + (i === indexCorrente ? ' active-player' : '');
+                tag.innerText = `${p.nome}: ${p.punti}` + (giocatori.length > 1 ? ` (TOT: ${p.banca})` : '');
+                area.appendChild(tag);
+            });
+        }
+
+        function passaTurno() {
+            indexCorrente = (indexCorrente + 1) % giocatori.length;
+            puòScegliereLettera = false;
+            document.getElementById('BTN_SPIN').disabled = false;
+            document.getElementById('WHEEL_DISPLAY').innerText = `TURNO DI: ${giocatori[indexCorrente].nome}`;
+            aggiornaTabellone();
+        }
+
+        function giraRuota() {
+            if (puòScegliereLettera) return; 
+            const display = document.getElementById('WHEEL_DISPLAY');
+            const btnSpin = document.getElementById('BTN_SPIN');
+            btnSpin.disabled = true;
+            let giri = 0;
+            const intervallo = setInterval(() => {
+                const casuale = opzioniRuota[Math.floor(Math.random() * opzioniRuota.length)];
+                display.innerText = casuale;
+                if (++giri > 12) {
+                    clearInterval(intervallo);
+                    valoreCorrente = casuale;
+                    if (valoreCorrente === "PASSO") {
+                        display.innerText = "PASSO!"; setTimeout(passaTurno, 1000);
+                    } else if (valoreCorrente === "PERDITUTTO") {
+                        giocatori[indexCorrente].punti = 0; if (giocatori.length > 1) { giocatori[indexCorrente].banca = 0; }
+                        display.innerText = "💥 PERDITUTTO!"; aggiornaTabellone(); setTimeout(passaTurno, 1000);
+                    } else {
+                        display.innerText = "VALORE: " + valoreCorrente; puòScegliereLettera = true;
+                    }
+                }
+            }, 80);
+        }
+
+        function costruisciBoard() {
+            const b = document.getElementById('BOARD'); b.innerHTML = '';
+            fraseAttuale.split(' ').forEach(parola => {
+                const group = document.createElement('div'); group.className = 'word-group';
+                for(let l of parola) {
+                    const s = document.createElement('span');
+                    if((l >= 'A' && l <= 'Z') || mapAccenti[l]){
+                        s.className = 'C'; s.setAttribute('data-l', mapAccenti[l] || l); s.innerHTML = l; group.appendChild(s);
+                    } else {
+                        const spec = document.createElement('span'); spec.className = 'special-char'; spec.innerHTML = l; group.appendChild(spec);
+                    }
+                }
+                b.appendChild(group);
+            });
+        }
+
+        function costruisciTastiera() {
+            const k = document.getElementById('KEYS'); k.innerHTML = '';
+            const vocali = "AEIOU";
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(let => {
+                const btn = document.createElement('button'); btn.innerHTML = let;
+                btn.onclick = () => {
+                    const isV = vocali.includes(let);
+                    if(isV) {
+                        if(giocatori[indexCorrente].punti < COSTO_VOCALE) return alert("SERVONO 400 PUNTI!");
+                        giocatori[indexCorrente].punti -= COSTO_VOCALE;
+                    } else if (!puòScegliereLettera) return alert("GIRA LA RUOTA!");
+                    btn.disabled = true; btn.style.opacity = "0.2";
+                    const occ = document.querySelectorAll(`.C[data-l="${let}"]`);
+                    if(occ.length > 0) {
+                        if(!isV) giocatori[indexCorrente].punti += (valoreCorrente * occ.length);
+                        occ.forEach(bx => { bx.style.color = 'black'; bx.style.borderColor = 'var(--neon-2)'; });
+                        checkRemainingLetters();
+                        controllaVittoria(); aggiornaTabellone(); setTimeout(passaTurno, 500);
+                    } else {
+                        // EFFETTO SCOSSONE
+                        const board = document.getElementById('BOARD');
+                        board.classList.remove('shake'); void board.offsetWidth; board.classList.add('shake');
+                        
+                        if (giocatori.length === 1) {
+                            errori++; document.getElementById('ERROR_COUNT').innerText = `ERRORI: ${errori}/${MAX_ERRORI}`;
+                            if(errori >= MAX_ERRORI) { rivelaFrase(); alert("PARTITA FINITA!"); return; }
+                        }
+                        setTimeout(passaTurno, 500);
+                    }
+                };
+                k.appendChild(btn);
+            });
+        }
+
+        function rivelaConTentativo() {
+            let tentativo = prompt("INSERISCI SOLUZIONE:");
+            if (!tentativo) return;
+            
+            if (tentativo.toUpperCase().trim() === fraseAttuale) {
+                rivelaFrase();
+                setTimeout(() => alert(`SOLUZIONE CORRETTA! HA VINTO ${giocatori[indexCorrente].nome}!`), 300);
+            } else {
+                alert("SOLUZIONE ERRATA!");
+                passaTurno();
+            }
+        }
+
+        function rivelaFrase() {
+            const n2 = getComputedStyle(document.documentElement).getPropertyValue('--neon-2');
+            document.querySelectorAll('.C').forEach(x => { x.style.color = 'black'; x.style.borderColor = n2; });
+            disabilitaTastiera();
+            if (giocatori.length > 1) {
+                giocatori[indexCorrente].banca += giocatori[indexCorrente].punti;
+                giocatori[indexCorrente].punti = 0; aggiornaTabellone();
+                document.getElementById('BTN_RIVELA').style.display = 'none';
+                document.getElementById('BTN_NEXT_ROUND').style.display = 'block';
+            }
+        }
+
+        function nuovaManche() {
+            document.getElementById('GAME').style.display = 'none';
+            document.getElementById('START').style.display = 'block';
+            document.getElementById('INPUT').value = '';
+            document.getElementById('CATEGORIES').style.display = 'flex'; 
+        }
+
+        function disabilitaTastiera() { document.querySelectorAll('#KEYS button').forEach(b => b.disabled = true); }
+
+        function controllaVittoria() {
+            const tutte = document.querySelectorAll('.C');
+            let vinte = 0; tutte.forEach(c => { if(c.style.color === 'black') vinte++; });
+            if(vinte === tutte.length && tutte.length > 0) {
+                setTimeout(() => alert(`HA VINTO ${giocatori[indexCorrente].nome}!`), 300);
+                if (giocatori.length === 1) disabilitaTastiera();
+            }
+        }
+
+        function ridimensionaBoard() {
+            const board = document.getElementById('BOARD'); const cont = document.getElementById('CONTENITORE_BOARD');
+            if (!cont || !board) return;
+            let w = cont.clientWidth - 20, h = cont.clientHeight - 20, size = 80;
+            const root = document.documentElement;
+            function fits() {
+                root.style.setProperty('--box-dim', size + 'px');
+                root.style.setProperty('--font-dim', (size * 0.7) + 'px');
+                return board.scrollWidth <= w && board.scrollHeight <= h;
+            }
+            while (size > 10 && !fits()) { size--; } 
+        }
+
+        function cambiaTema(avanza = true) {
+            if (avanza) {
+                temaIndex = (temaIndex + 1) % temi.length;
+                localStorage.setItem('cyberPuzzleTheme', temaIndex);
+            }
+            const t = temi[temaIndex];
+            const root = document.documentElement;
+            root.style.setProperty('--bg-grad-1', t.g1); root.style.setProperty('--bg-grad-2', t.g2);
+            root.style.setProperty('--neon-1', t.n1); root.style.setProperty('--neon-2', t.n2);
+            root.style.setProperty('--key-bg', t.k);
+            document.getElementById('THEME_NAME').innerText = t.nome;
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', t.g1);
+        }
+
+        function condividiSfida() {
+            const f = document.getElementById('INPUT').value.trim(); if(!f) return alert("Scrivi una frase!");
+            let ut = prompt("TITOLO SFIDA:", titoloAttuale || "");
+            const b64 = btoa(unescape(encodeURIComponent(f)));
+            const t64 = "&t=" + btoa(unescape(encodeURIComponent(ut || "SFIDA")));
+            const link = "https://puzzlengames.github.io/Indovina-la-Frase/?s=" + b64 + t64; 
+            navigator.clipboard.writeText(link); alert("Link sfida copiato!");
+        }
+
+        function condividiApp() {
+            const url = "https://puzzlengames.github.io/Indovina-la-Frase/";
+            if (navigator.share) navigator.share({ title: 'Cyber Puzzle Pro', url: url });
+            else { navigator.clipboard.writeText(url); alert("Link copiato!"); }
+        }
+
+        function toggleKeyboard() {
+            const k = document.getElementById('KEYS');
+            k.style.display = (k.style.display === 'none') ? 'flex' : 'none';
+            const btn = document.getElementById('BTN_KB');
+            if(btn) btn.innerHTML = (k.style.display === 'none') ? "⌨️" : "⌨️ OFF";
+            setTimeout(ridimensionaBoard, 50);
+        }
+
+        function toggleFS() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {});
+                localStorage.setItem('cyberPuzzleFS', 'true');
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); localStorage.setItem('cyberPuzzleFS', 'false'); }
+            }
+            ridimensionaBoard(); setTimeout(ridimensionaBoard, 150); setTimeout(ridimensionaBoard, 400);
+        }
+
+        let resizeTimer;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(ridimensionaBoard, 100); });
+        window.addEventListener('orientationchange', () => { clearTimeout(resizeTimer); setTimeout(ridimensionaBoard, 300); });
+        document.addEventListener('fullscreenchange', () => { setTimeout(ridimensionaBoard, 200); });
+        document.addEventListener('dblclick', (e) => { if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') { toggleFS(); } });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Enter" && document.getElementById('START').style.display !== 'none') { avviaGioco(true); }
+            if (e.code === "Space" && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); toggleFS(); }
+            const k = e.key.toUpperCase();
+            document.querySelectorAll('#KEYS button').forEach(b => { if(b.innerHTML === k && !b.disabled) b.click(); });
+        });
+    </script>
+</body>
+</html>

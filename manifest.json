@@ -1,0 +1,21 @@
+{
+  "name": "Cyber Puzzle - Indovina la Frase",
+  "short_name": "Cyber Puzzle",
+  "description": "Indovina la frase nascosta ispirato alla Ruota della Fortuna",
+  "start_url": "https://asarritzu-boop.github.io/IndovinaFrase/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0f0f0f",
+  "icons": [
+    {
+      "src": "icona-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icona-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
